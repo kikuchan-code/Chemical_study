@@ -124,7 +124,7 @@
 
         table {
             width: 100%;
-            min-width: 900px;
+            min-width: 1200px;
             border-collapse: collapse;
 
             /* 追加 */
@@ -388,79 +388,96 @@
             }
         }
 
-        function randomizeHoles() {
+       function randomizeHoles() {
 
-            const holeCount = parseInt(holeCountInput.value, 10);
+    const holeCount = parseInt(holeCountInput.value, 10);
 
-            createTable();
+    createTable();
 
-            // 1列目（官能基名）の重複管理
-            const usedFirstColumnAnswers = new Set();
+    tableBody.querySelectorAll('tr').forEach((row, rowIndex) => {
 
-            tableBody.querySelectorAll('tr').forEach(row => {
+        const item = data[rowIndex];
 
-                const cells = Array.from(row.children);
+        const cells = Array.from(row.children);
 
-                shuffleArray(cells);
+        const indices = [0, 1, 2, 3, 4, 5];
 
-                let holesMade = 0;
+        shuffleArray(indices);
 
-                for (const cell of cells) {
+        let holesMade = 0;
 
-                    if (holesMade >= holeCount) break;
+        const hiddenCols = [];
 
-                    const cellIndex = cells.indexOf(cell);
+        // ヒドロキシ基を区別するための重要列
+        const protectedCols = [2, 4, 5];
+        // 2:化合物名
+        // 4:代表例
+        // 5:代表構造
 
-                    const originalText = cell.textContent;
+        for (const index of indices) {
 
-                    // 1列目だけ重複禁止
-                    if (cellIndex === 0) {
+            if (holesMade >= holeCount) break;
 
-                        if (usedFirstColumnAnswers.has(originalText)) {
-                            continue;
-                        }
+            // ヒドロキシ基だけ特別ルール
+            if (item.name === 'ヒドロキシ基') {
 
-                        usedFirstColumnAnswers.add(originalText);
-                    }
+                const hiddenProtected =
+                    hiddenCols.filter(x =>
+                        protectedCols.includes(x)
+                    );
 
-                    cell.innerHTML =
-                        `<input type="text" data-answer="${originalText}" />`;
-
-                    const input = cell.querySelector('input');
-
-                    function resize() {
-
-                        const temp = document.createElement('span');
-
-                        temp.style.visibility = 'hidden';
-                        temp.style.position = 'absolute';
-                        temp.style.whiteSpace = 'pre';
-
-                        temp.style.font =
-                            getComputedStyle(input).font;
-
-                        temp.textContent =
-                            input.value || originalText || " ";
-
-                        document.body.appendChild(temp);
-
-                        input.style.width =
-                            `${temp.offsetWidth + 32}px`;
-
-                        temp.remove();
-                    }
-
-                    input.addEventListener('input', resize);
-
-                    input.resizeInput = resize;
-
-                    resize();
-
-                    holesMade++;
+                // protectedColsを全部穴にするのは禁止
+                if (
+                    protectedCols.includes(index) &&
+                    hiddenProtected.length >= protectedCols.length - 1
+                ) {
+                    continue;
                 }
-            });
-        }
+            }
 
+            const cell = cells[index];
+
+            const originalText = cell.textContent;
+
+            cell.innerHTML =
+                `<input type="text" data-answer="${originalText}" />`;
+
+            const input = cell.querySelector('input');
+
+            function resize() {
+
+                const temp = document.createElement('span');
+
+                temp.style.visibility = 'hidden';
+                temp.style.position = 'absolute';
+                temp.style.whiteSpace = 'pre';
+
+                temp.style.font =
+                    getComputedStyle(input).font;
+
+                temp.textContent =
+                    input.value || originalText || " ";
+
+                document.body.appendChild(temp);
+
+                input.style.width =
+                    `${temp.offsetWidth + 32}px`;
+
+                temp.remove();
+            }
+
+            input.addEventListener('input', resize);
+
+            input.resizeInput = resize;
+
+            resize();
+
+            hiddenCols.push(index);
+
+            holesMade++;
+        }
+    });
+}
         function checkAnswers() {
 
             tableBody.querySelectorAll('input').forEach(input => {
